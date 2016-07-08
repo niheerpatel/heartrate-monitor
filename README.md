@@ -14,4 +14,4 @@ Build and flash the x86-side application with these commands:
  $ make pristine && make BOARD=arduino_101_factory ARCH=x86
  $ sudo -E dfu-util -a x86_app -D output/zephyr.bin
 
-![Some Image](https://github.com/niheerpatel/heartrate-monitor/docs/assets/hr-monitor.jpeg)
+![Some Image](https://www.github.com/niheerpatel/heartrate-monitor/docs/assets/hr-monitor.jpeg)
