@@ -1,6 +1,6 @@
 # How to build a heart rate monitor using Zephyr\* on Arduino\* 101 boards
 
-- [Hardware Preparation](##Hardware Preparation)
+- [Hardware Preparation](#Hardware Preparation)
 - [TEST](#test)
 This is the sample app to measure heart rate using a pulse sensor
 on an Arduino 101. The measured data will then be sent to a connected
