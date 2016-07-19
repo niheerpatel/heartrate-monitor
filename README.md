@@ -264,7 +264,7 @@ static void show_heartbeat_using_fade_effect(int index)
 }
 ```
 
-Exchange data between ARC and x86 cores using interprocessor mailboxes (IPM)
+### Exchange data between ARC and x86 cores using interprocessor mailboxes (IPM)
 There are three types of data passing services in Zephyr: FIFOs, PIPEs and Mailboxes. In this example we use interprocessor mailboxes, also called IPM. This is an implementation of a traditional message queue that allows tasks to exchange messages. A sender task sends the messages and a receiver task receives those messages. Here, data flows from ARC to x86, so the ARC side is the sender, and the x86 side is the receiver. You can configure this with the proper settings.
 In **prj_arc.conf** for the ARC app, make sure you have:
 
@@ -318,7 +318,9 @@ void hrs_ipm_callback(void *context, uint32_t id, volatile void *data)
 }
 ```
 where *bt_gatt_notify()* call is used to send data to the currently paired BLE connection. More details about Zephyr mailboxes can be found in Zephyr documentation.
-Sending data to connected phone over BLE
+
+### Sending data to connected phone over BLE
+
 The app needs to be configured to use the BLE firmware. For that purpose, the following configurations are defined in the **prj_x86.conf** file:
 
 ```
