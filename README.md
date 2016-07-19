@@ -30,10 +30,12 @@ Follow the instructions here to prepare the firmware:
 [https://www.zephyrproject.org/doc/board/arduino_101_ble.html#arduino-101-ble](https://www.zephyrproject.org/doc/board/arduino_101_ble.html#arduino-101-ble)
 
 Build and flash the ARC-side application with the following commands:
-`$ make pristine && make BOARD=arduino_101_sss_factory ARCH=arc`
-`$ sudo -E dfu-util -a sensor_core -D output/zephyr.bin`
+
+`$ make pristine && make BOARD=arduino_101_sss_factory ARCH=arc
+$ sudo -E dfu-util -a sensor_core -D output/zephyr.bin`
 
 Build and flash the x86-side application with these commands:
+
 `$ make pristine && make BOARD=arduino_101_factory ARCH=x86`
 `$ sudo -E dfu-util -a x86_app -D output/zephyr.bin`
 
@@ -96,23 +98,31 @@ The Arduino 101 board uses digital pins 0 (RX) and 1 (TX) to send and receive se
 3. Finally, connect *GND* to the black line, pin 0 (*GND*) of the FTDI cable.
 
 ![Figure 1: Wiring with the breadboard](./docs/assets/image00.png)
+
 *Figure 1: Wiring with the breadboard*
 
 *Figure 1* shows an example of how to wire the device using a breadboard. The two 10K ohm resistors are used to make the pull-up circuit. They are connected to the 3.3V output at one end, and to the SCL and SDA at the other end, which transfer signals to the LCD. The pulse sensor shares the 3.3V line with the pull-up circuit (red cable), and uses A2 to send analog data to the board. The brown and orange jumper wires are connected to pin 0 and pin 1 at one end, and to TX and RX of the USB FTDI card respectively.
 
 ![Figure 2: Back of Proto Shield](./docs/assets/image04.png) 
+
 *Figure 2: Front of Proto Shield*
 
+
 ![Figure 3: Front of Proto Shield](./docs/assets/image03.png)
+
 *Figure 3: Front of Proto Shield*
+
 
 *Figure 2* & *Figure 3* show an Arduino Proto Shield rev. 3 with circuits that are generally similar to the breadboard, but they are soldered down instead. The shield provides convenient 5V and GND connections for circuits. Pin 0 and pin 1 of the 7-pin female connector are bent to reach the 3.3V and GND ports, while the other five pins go into analog input ports.
 
-![Figure 4: Hardware Setup](./docs/assets/image04.png) 
+![Figure 4: Hardware Setup](./docs/assets/image02.png) 
+
 *Figure 4: Hardware Setup*
 
-![Figure 5: Front of Proto Shield](./docs/assets/image03.png)
+![Figure 5: Front of Proto Shield](./docs/assets/image06.png)
+
 *Figure 5: Heart Rate Monitor in a case*
+
 
 *Figure 4* and *Figure 5* show the hardware setup before and after getting the hardware inside a clear case. The Proto Shield has exactly the same form factor as the Arduino 101 board, so you can use some long M3 bolts to hold them together in the clear case.
 
@@ -132,9 +142,11 @@ Check out the source code for the heart rate monitor application [here](https://
 
 ### Building and flashing the apps
 Build and flash the ARC-side application with the following commands:
-    $ cd heartrate-monitor
-    $ make pristine && make BOARD=arduino_101_sss_factory ARCH=arc
-    $ sudo -E dfu-util -a sensor_core -D output/zephyr.bin
+ 
+ 
+ `$ cd heartrate-monitor`
+ `$ make pristine && make BOARD=arduino_101_sss_factory ARCH=arc`
+ `$ sudo -E dfu-util -a sensor_core -D output/zephyr.bin`
 Build and flash the x86-side application with these commands:
     $ make pristine && make BOARD=arduino_101_factory ARCH=x86
     $ sudo -E dfu-util -a x86_app -D output/zephyr.bin
@@ -142,4 +154,10 @@ Build and flash the x86-side application with these commands:
 ### Connecting from a smartphone
 A portable device that supports BLE can be used to connect to the Arduino 101 board. This example has been tested with the default Health app on the iPhone* and the nRF Toolbox app on Android* devices.
 
+![Figure 6: iOS\* Health App](./docs/assets/image01.png) 
 
+*Figure 6: iOS\* Health App*
+
+![Figure 7: Front of Proto Shield](./docs/assets/image05.png)
+
+*Figure 7: nRF Toolbox App*
