@@ -1,7 +1,26 @@
 # How to build a heart rate monitor using Zephyr\* on Arduino\* 101 boards
 
+- [Introduction](#introduction)
 - [Hardware Preparation](#hardware-preparation)
-- [TEST](#test)
+- [Hardware Setup](#hardware-setup)
+- [Software Setup](#software-setup)
+    - [Environmental Setup](#environmental-setup)
+    - [Building and Flashing the BLE Firmware](#building-and-flashing-the-ble-firmware)
+    - [Getting application source code](#getting-application-source-code)
+    - [Building and flashing the apps](#building-and-flashing-the-apps)
+    - [Connecting from a smartphone](#connecting-from-a-smartphone)
+- [Understanding the application code](#understanding-the-application-code)
+    - [Data flow](#data-flow)
+    - [Getting analog signal](#getting-analog-signal)
+    - [Using Grove RGB LCD to show the heartbeat](#using-grove-rgb-lcd-to-show-the-heartbeat)
+    - [Exchange data between ARC and x86 cores using Interprocess Mailboxes](#exchange-data-between-arc-and-x86-cores-using-interprocess-mailboxes)
+    - [Sending data to connected phone over BLE](#sending-data-to-connected-phone-over-ble)
+- [Summary](#summary)
+- [Notices and disclaimers](#notices-and-disclaimers)
+
+<br>
+
+## Introduction
 This is the sample app to measure heart rate using a pulse sensor
 on an Arduino 101. The measured data will then be sent to a connected
 smart phone over BLE.
@@ -21,7 +40,7 @@ Build and flash the x86-side application with these commands:
 The Zephyr Kernel is a small-footprint kernel designed for use on resource-constrained systems: from simple embedded environmental sensors and LED wearables to sophisticated smart watches and IoT wireless gateways. Among the many features that distinguish it from other RTOSes are:
 
 * Rich I/O driver support.
-* High configurability. 
+* High configurability.
 * Resource definition at compile time that makes it well-suited for quick prototyping. 
 * Small footprint.
 * Easy to optimize for specific use-cases.
@@ -79,5 +98,10 @@ The Arduino 101 board uses digital pins 0 (RX) and 1 (TX) to send and receive se
 ![Figure 1: Wiring with the breadboard](./docs/assets/image00.png)
 *Figure 1: Wiring with the breadboard*
 
-#TEST
-Some text
+*Figure 1* shows an example of how to wire the device using a breadboard. The two 10K ohm resistors are used to make the pull-up circuit. They are connected to the 3.3V output at one end, and to the SCL and SDA at the other end, which transfer signals to the LCD. The pulse sensor shares the 3.3V line with the pull-up circuit (red cable), and uses A2 to send analog data to the board. The brown and orange jumper wires are connected to pin 0 and pin 1 at one end, and to TX and RX of the USB FTDI card respectively.
+
+![](./docs/assets/image04.png) | ![](./docs/assets/image03.png)
+*Figure 1: Wiring with the breadboard*
+
+
+
