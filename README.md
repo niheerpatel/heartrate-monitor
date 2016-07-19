@@ -30,12 +30,12 @@ Follow the instructions here to prepare the firmware:
 [https://www.zephyrproject.org/doc/board/arduino_101_ble.html#arduino-101-ble](https://www.zephyrproject.org/doc/board/arduino_101_ble.html#arduino-101-ble)
 
 Build and flash the ARC-side application with the following commands:
- $ make pristine && make BOARD=arduino_101_sss_factory ARCH=arc
- $ sudo -E dfu-util -a sensor_core -D output/zephyr.bin
+ `$ make pristine && make BOARD=arduino_101_sss_factory ARCH=arc`
+` $ sudo -E dfu-util -a sensor_core -D output/zephyr.bin`
 
 Build and flash the x86-side application with these commands:
- $ make pristine && make BOARD=arduino_101_factory ARCH=x86
- $ sudo -E dfu-util -a x86_app -D output/zephyr.bin
+` $ make pristine && make BOARD=arduino_101_factory ARCH=x86`
+` $ sudo -E dfu-util -a x86_app -D output/zephyr.bin`
 
 The Zephyr Kernel is a small-footprint kernel designed for use on resource-constrained systems: from simple embedded environmental sensors and LED wearables to sophisticated smart watches and IoT wireless gateways. Among the many features that distinguish it from other RTOSes are:
 
