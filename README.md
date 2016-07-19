@@ -32,15 +32,16 @@ Follow the instructions here to prepare the firmware:
 Build and flash the ARC-side application with the following commands:
 
 ```
-    $ make pristine && make BOARD=arduino_101_sss_factory ARCH=arc`
-    $ sudo -E dfu-util -a sensor_core -D output/zephyr.bin`
+    $ make pristine && make BOARD=arduino_101_sss_factory ARCH=arc
+    $ sudo -E dfu-util -a sensor_core -D output/zephyr.bins
 ```
 
 Build and flash the x86-side application with these commands:
 
-`$ make pristine && make BOARD=arduino_101_factory ARCH=x86`
-
-`$ sudo -E dfu-util -a x86_app -D output/zephyr.bin`
+```
+    $ make pristine && make BOARD=arduino_101_factory ARCH=x86
+    $ sudo -E dfu-util -a x86_app -D output/zephyr.bin
+```
 
 The Zephyr Kernel is a small-footprint kernel designed for use on resource-constrained systems: from simple embedded environmental sensors and LED wearables to sophisticated smart watches and IoT wireless gateways. Among the many features that distinguish it from other RTOSes are:
 
@@ -141,18 +142,25 @@ The Arduino 101 board comes with a Nordic Semiconductor nRF51 Bluetooth LE contr
 ### Getting application source code
 Check out the source code for the heart rate monitor application [here](https://www.zephyrproject.org/doc/board/arduino_101.html). 
 
-`$ git clone https://gerrit.zephyrproject.org/r/heartrate-monitor`
+```
+    $ git clone https://gerrit.zephyrproject.org/r/heartrate-monitor
+```
 
 ### Building and flashing the apps
 Build and flash the ARC-side application with the following commands:
  
- 
- `$ cd heartrate-monitor`
- `$ make pristine && make BOARD=arduino_101_sss_factory ARCH=arc`
- `$ sudo -E dfu-util -a sensor_core -D output/zephyr.bin`
+```
+$ cd heartrate-monitor
+$ make pristine && make BOARD=arduino_101_sss_factory ARCH=arc
+$ sudo -E dfu-util -a sensor_core -D output/zephyr.bin
+```
+
 Build and flash the x86-side application with these commands:
+
+```
     $ make pristine && make BOARD=arduino_101_factory ARCH=x86
     $ sudo -E dfu-util -a x86_app -D output/zephyr.bin
+```
 
 ### Connecting from a smartphone
 A portable device that supports BLE can be used to connect to the Arduino 101 board. This example has been tested with the default Health app on the iPhone* and the nRF Toolbox app on Android* devices.
@@ -164,3 +172,262 @@ A portable device that supports BLE can be used to connect to the Arduino 101 bo
 ![Figure 7: Front of Proto Shield](./docs/assets/image05.png)
 
 *Figure 7: nRF Toolbox App*
+
+On an iPhone, use the following instructions:
+
+1. Open Settings > Bluetooth to scan for and pair with Zephyr Heartrate Monitor.
+2. Launch the Health app.
+3. Go to Health Data > Vitals > Heart Rate. 
+4. Put your finger on the pulse sensor.
+5. After several seconds, the heart rate data will appear on the Grove LCD and the Health app screen.
+
+On an Android phone, use these instructions:
+
+1. Open the nRF Toolbox.
+2. Go to HRM and enable Bluetooth if asked.
+3. Select Connect, and pair the phone with the Zephyr Heartrate Monitor device.
+4. Put your finger on the pulse sensor.
+5. After several seconds, the heart rate data will appear on the Grove LCD and the app screen.
+
+## Understanding the application code
+
+![Figure 8: Data Flow](./docs/assets/image07.png)
+
+*Figure 8: Data Flow*
+
+### Data Flow
+
+*Figure 8* depicts the data flow in the example. The application running on the ARC processor takes data from the pulse sensor through the ADC interface. It analyzes the data and decides whether the data means heartbeats. When the ARC app detects a heartbeat, it displays the heart rate in the Grove LCD and flashes the LCD to show the beat. At the same time, the app sends the heart rate data over the IPM to the x86 side. Then the x86 application receives the heart rate data and controls the nRF51 BLE chip over IPC to notify a connected device of the new value using the BLE heart rate profile.
+
+### Getting analog signal
+
+To measure the heartbeat exactly, the ARC core needs to read analog data from the pulse sensor every 2 ms. First, ADC driver must be enabled and the SYS_CLOCK_TICKS_PER_SEC config for ARC needs to be configured to be high enough instead of the default value. This is done in the following lines in the **prj_arc.conf** config file:
+
+```
+CONFIG_ADC=y
+CONFIG_SYS_CLOCK_TICKS_PER_SEC=1000
+```
+
+Second, in the main loop of the program, the processing needs to repeat every 2 ms. To do that,  enter the following in the **main_arc.c** file:
+
+```
+#define INTERVAL        2
+#define SLEEPTICKS MSEC(INTERVAL)
+...
+void main(void)
+{
+    struct nano_timer timer;
+    nano_timer_init(&timer, data);
+    …
+    while (1) {
+        <process data analysis>
+        …
+        nano_timer_start(&timer, SLEEPTICKS);
+        nano_timer_test(&timer, TICKS_UNLIMITED);
+    }
+}
+```
+
+The app uses a buffer of four uint8_t bytes to store the analog signal from the pulse sensor. It converts them to one uint32_t value and uses that value for analysis.
+
+```
+#define ADC_BUFFER_SIZE 4
+static uint8_t seq_buffer[ADC_BUFFER_SIZE];
+...
+uint32_t signal = (uint32_t) seq_buffer[0]
+                | (uint32_t) seq_buffer[1] << 8
+                | (uint32_t) seq_buffer[2] << 16
+                | (uint32_t) seq_buffer[3] << 24;
+
+value = measure_heartrate(signal);
+```
+
+The analysis for a heartbeat is processed in **heartbeat.c**. It refers to the source code from [PulseSensor](https://github.com/WorldFamousElectronics/PulseSensor_Amped_Arduino/tree/master/PulseSensorAmped_Arduino_1dot4), but modifies the values since the Arduino 101 board uses 12-bit ADC instead of 10-bit ADC like other Arduino boards.
+
+###Using Grove RGB LCD to show the heartbeat
+This refers to the grove_lcd sample in the Zephyr source tree. The extra thing here is that the heart rate monitor example defines the color code for heart rate: blue for heart rates less than 60 beats per minute (bpm), green for 60 to 79 bpm, yellow for 80 to 99 bpm, and red for heart rates equal to or faster than 100 bpm. It also uses the *show_heartbeat_using_fade_effect()* function to fade out the brightness and thus simulate the heartbeat.
+
+```
+static void show_heartbeat_using_fade_effect(int index)
+{
+    uint8_t red, green, blue;
+    if (!glcd || fadeRate < 0 || index < 0 || index > 3) {
+        return;
+}
+
+    red = (color[index][0] * fadeRate / 255) & 0xff;
+    green = (color[index][1] * fadeRate / 255) & 0xff;
+    blue = (color[index][2] * fadeRate / 255) & 0xff;
+    glcd_color_set(glcd, red, green, blue);
+
+    fadeRate -= 15;
+}
+```
+
+Exchange data between ARC and x86 cores using interprocessor mailboxes (IPM)
+There are three types of data passing services in Zephyr: FIFOs, PIPEs and Mailboxes. In this example we use interprocessor mailboxes, also called IPM. This is an implementation of a traditional message queue that allows tasks to exchange messages. A sender task sends the messages and a receiver task receives those messages. Here, data flows from ARC to x86, so the ARC side is the sender, and the x86 side is the receiver. You can configure this with the proper settings.
+In **prj_arc.conf** for the ARC app, make sure you have:
+
+```
+CONFIG_IPM=y
+CONFIG_IPM_QUARK_SE=y
+CONFIG_IPM_CONSOLE_SENDER=y
+```
+
+In **prj_x86.conf** for the x86 app:
+
+```
+CONFIG_IPM=y
+CONFIG_IPM_QUARK_SE=y
+CONFIG_IPM_QUARK_SE_MASTER=y
+CONFIG_IPM_CONSOLE_RECEIVER=y
+```
+
+And in the source code, the ARC side uses the IPM API to send messages containing heart rate data to the x86 side. In the **main_arc.c** file:
+
+```
+ipm_value = (uint8_t) value;
+ret = ipm_send(ipm, 1, HRS_ID, &ipm_value, sizeof(ipm_value));
+if (ret) {
+    printk("Failed to send IPM message, error (%d)\n", ret);
+}
+```
+
+The x86 app registers a callback to read the heart rate value and send over BLE connection whenever there is a new message. In the **main_x86.c** file, we do the following:
+
+```
+struct device *ipm;
+ipm = device_get_binding("hrs_ipm");
+ipm_set_enabled(ipm, 1);
+ipm_register_callback(ipm, hrs_ipm_callback, NULL);
+...
+void hrs_ipm_callback(void *context, uint32_t id, volatile void *data)
+{
+    uint8_t value = *(volatile uint8_t *) data;
+    switch (id) {
+        /* only accept value from defined HRS channel */
+        case HRS_ID:
+            hrs_value = (uint16_t) value << 8 | 0x06;
+            if (default_conn) {
+                bt_gatt_notify(default_conn, &hrs_attrs[2], &hrs_value, sizeof(hrs_value));
+            }
+            break;
+        default:
+            break;
+    }
+}
+```
+where *bt_gatt_notify()* call is used to send data to the currently paired BLE connection. More details about Zephyr mailboxes can be found in Zephyr documentation.
+Sending data to connected phone over BLE
+The app needs to be configured to use the BLE firmware. For that purpose, the following configurations are defined in the **prj_x86.conf** file:
+
+```
+CONFIG_BLUETOOTH=y
+CONFIG_BLUETOOTH_LE=y
+CONFIG_BLUETOOTH_SMP=y
+CONFIG_BLUETOOTH_PERIPHERAL=y
+CONFIG_BLUETOOTH_GATT_DYNAMIC_DB=y
+```
+
+The x86-side app notifies the connected device of the heart rate value it receives from the ARC-side using the BLE heart rate service. There are several steps here:
+
+1. First, the x86 app needs to declare and register itself as a GAP (generic access profile) with peripheral role so that it can advertise its presence, enabling central devices to discover it for connection. The x86 app must also declare and register itself as a heart rate service (HRS) so that the connected device can understand and use the appropriate app to use the service. 
+2. Second, it needs to monitor the connections so that it can notify the connected device. 
+3. Finally, the x86 app sends notifications upon getting a new heart rate value from the ARC side.
+
+For the first step, it declares the following attributes:
+
+```
+static struct bt_gatt_attr gap_attrs[] = {
+    BT_GATT_PRIMARY_SERVICE(BT_UUID_GAP),
+    BT_GATT_CHARACTERISTIC(BT_UUID_GAP_DEVICE_NAME, BT_GATT_CHRC_READ),
+    BT_GATT_DESCRIPTOR(BT_UUID_GAP_DEVICE_NAME, BT_GATT_PERM_READ, read_name, NULL, NULL),
+    BT_GATT_CHARACTERISTIC(BT_UUID_GAP_APPEARANCE, BT_GATT_CHRC_READ),
+    BT_GATT_DESCRIPTOR(BT_UUID_GAP_APPEARANCE, BT_GATT_PERM_READ, read_appearance, NULL, NULL)
+};
+
+static struct bt_gatt_attr hrs_attrs[] = {
+    BT_GATT_PRIMARY_SERVICE(BT_UUID_HRS),
+    BT_GATT_CHARACTERISTIC(BT_UUID_HRS_MEASUREMENT, BT_GATT_CHRC_NOTIFY),
+    BT_GATT_DESCRIPTOR(BT_UUID_HRS_MEASUREMENT, BT_GATT_PERM_READ, NULL, NULL, NULL),
+    BT_GATT_CCC(hrmc_ccc_cfg, NULL)
+};
+```
+And registers those attributes when Bluetooth is ready, as shown:
+
+```
+bt_gatt_register(gap_attrs, ARRAY_SIZE(gap_attrs));
+bt_gatt_register(hrs_attrs, ARRAY_SIZE(hrs_attrs));
+```
+
+The app then starts to advertise itself for connection. Here ad[] is the data used in advertisement packets, where the flag setting makes it discoverable to other devices, and the UUID setting declares it as the heart rate service, as described in [bluetooth.org](https://developer.bluetooth.org/gatt/services/Pages/ServicesHome.aspx). The sd[] array is the data used in scan response packets. 
+
+```
+static const struct bt_data ad[] = {
+    BT_DATA_BYTES(BT_DATA_FLAGS, (BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR)), BT_DATA_BYTES(BT_DATA_UUID16_ALL, 0x0d, 0x18)
+};
+
+static const struct bt_data sd[] = {
+    BT_DATA(BT_DATA_NAME_COMPLETE, DEVICE_NAME, DEVICE_NAME_LEN)
+};
+...
+err = bt_le_adv_start(BT_LE_ADV_CONN, ad, ARRAY_SIZE(ad),sd, ARRAY_SIZE(sd));
+if (err) {
+    printk("Advertising failed to start (err %d)\n", err);
+    return;
+}
+```
+
+The app manages the connection (default_conn) by registering callbacks on new connection or disconnection events.
+
+```
+static void connected(struct bt_conn *conn, uint8_t err)
+{
+    if (err) {
+        printk("Connection failed (err %u)\n", err);
+    } else {
+            default_conn = bt_conn_ref(conn);
+            printk("Connected\n");
+        }
+}
+
+static void disconnected(struct bt_conn *conn, uint8_t reason)
+{
+    printk("Disconnected (reason %u)\n", reason);
+    if (default_conn) {
+       bt_conn_unref(default_conn);
+       default_conn = NULL;
+    }
+}
+
+static struct bt_conn_cb conn_callbacks = {
+    .connected = connected,
+    .disconnected = disconnected,
+};
+...
+bt_conn_cb_register(&conn_callbacks);
+```
+
+Finally, the app notifies the connected device of the new heart rate value:
+
+```
+if (default_conn) {
+    bt_gatt_notify(default_conn, &hrs_attrs[2], &hrs_value, sizeof(hrs_value));
+}
+```
+
+## Summary
+Now you can build your own heart rate monitor using Zephyr on an Arduino 101 board. There are many more sensor app samples and usages in the Zephyr source tree that can help you to get started both with the Arduino 101 board and the Zephyr kernel in general.
+
+## Notices and disclaimers
+No license (express or implied, by estoppel or otherwise) to any intellectual property rights is granted by this document.
+
+Intel disclaims all express and implied warranties, including without limitation, the implied warranties of merchantability, fitness for a particular purpose, and non-infringement, as well as any warranty arising from course of performance, course of dealing, or usage in trade.
+
+Intel and the Intel logo are trademarks of Intel Corporation in the U.S. and/or other countries. 
+
+ARDUINO 101 and the ARDUINO infinity logo are trademarks or registered trademarks of Arduino, LLC.
+
+*Other names and brands may be claimed as the property of others.
+© 2016 Intel Corporation.
+
