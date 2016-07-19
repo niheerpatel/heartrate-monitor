@@ -1,6 +1,6 @@
 # How to build a heart rate monitor using Zephyr\* on Arduino\* 101 boards
 
-- [Hardware Preparation](#Hardware Preparation)
+- [Hardware Preparation](#hardware-preparation)
 - [TEST](#test)
 This is the sample app to measure heart rate using a pulse sensor
 on an Arduino 101. The measured data will then be sent to a connected
@@ -30,7 +30,7 @@ The Zephyr Kernel is a small-footprint kernel designed for use on resource-const
 The Arduino 101 board is an interesting Arduino product with an Intel® Curie™ module. Its Intel® Quark™ SE processor has two cores: an ARC core that controls the sensor subsystem, and an x86 core that controls the Bluetooth Low Energy (BLE) chip. Zephyr not only supports all sensor interfaces of the board, but also enables data exchange between the cores via the interprocessor mailboxes (IPM) mechanism and a BLE connection to other devices.
 This article introduces Zephyr application development through a step-by-step explanation of how to build a heart rate sensor on an Arduino 101 board. We show details of how to read analog data from a pulse sensor and detect your heartbeat, how to visually display the heart rate and heartbeat on a Grove\* RGB LCD, and how to send heart rate data to a smartphone via a BLE connection using a standard heart rate profile. All source code is mainly based on the samples provided in the Zephyr repository. Readers can learn about the features that Zephyr provides for IoT applications and also can use this information to start building their own apps on Arduino 101 boards.
 
-##Hardware Preparation
+## Hardware Preparation
 The following hardware parts are required to build the heart rate monitor:
 
 * USB type B cable.
